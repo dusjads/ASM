@@ -1,5 +1,8 @@
 #include <iostream>
 #include <emmintrin.h>
+#include <tmmintrin.h>
+#include <stdio.h>
+
 
 __m128i const SPACE_MASK = _mm_set1_epi8(' ');
 __m128i const ZERO_MASK = _mm_set1_epi8(0);
@@ -80,13 +83,38 @@ void test(){
     }
 }
 
+std::string get_string(long long int a) {
+    char *c = (char *)(&a);
+    std::string res = "";
+    for (int i = 0; i < 8; ++i) {
+        res += *(c + i);
+    }
+    return res;
+}
+
+void print(__m128i& a ){
+    std::cout << get_string(a[0]) << get_string(a[1]) << '\n';
+}
+
 int main(){
-    test();
+    // test();
     // std::string str = " g jjtldikqaqguk jqtjdid sgejkyhtuisjsj pjapiueo ejkqqo  trkfky sjdolpo rillhj hskysjgalaqejklhiwosjatkqjqjufjqktupawulqugg rioyfy gkpdeklkywkai ui jswqjdwdepe dqhikokr wkqholhssflfdlukhrfeyg iouaaara g hwpoaieor  jkhfiseqdkotkowgyw    ";
     // size_t n = str.size();
     // size_t w = wordcount(str.c_str(), n);
     // size_t nw = naive_wordcount(str.c_str(), n);
     // std::cout << w << ' ' << nw << '\n';
+    int n = 32;
+    std::string str;
+    std::string const alf = "qwertyuioplkjhgfdsa";
+    for (int i = 0; i < n; i++)
+        str += alf[rand() % alf.size()];
+    std::cout << str << '\n';
+    __m128i a = _mm_loadu_si128((__m128i*) (str.c_str()));
+    __m128i b = _mm_loadu_si128((__m128i*) (str.c_str() + 16));
+    __m128i c = _mm_alignr_epi8(b, a, 5); 
+    print(a);
+    print(b);
+    print(c);
 
     return 0;
 }

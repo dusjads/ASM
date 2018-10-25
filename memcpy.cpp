@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 #include <emmintrin.h>
 
 void* naive_memcpy( void* dest, const void* src, std::size_t count ){
@@ -35,16 +36,23 @@ void* memcpy8( void* dest, const void* src, std::size_t count ){
 
 void* memcpy16( void* dest, const void* src, std::size_t count ){
     __m128i buf;
-    for (size_t i = 0; i < count; i += 16){
+    if (count < 32) return naive_memcpy(dest, src, count);
+    size_t tail = count - count % 16;
+    for (size_t i = 0; i < tail; i += 16){
+        // std::cout << i << ' ' << tail << '\n';
         __asm__ __volatile__ ( 
             "cld\n\t"                               // Clear Direction Flag
             "movdqu (%1), %0\n"
-            "movntdq %0, (%2)\n"
+            "movdqu %0, (%2)\n"
             : "=x"(buf)
             : "r"((char*)src + i), "r"((char*)dest + i)
             : "memory"
         );
     }
+    for (size_t i = tail; i < count; i++){
+        *((char*)dest + i) = *((char *) src + i);
+    }
+
     return dest;
 }
 
@@ -60,7 +68,7 @@ void* memcpy16_aligned( void* dest, const void* src, std::size_t count ){
         __asm__ __volatile__ ( 
             "cld\n\t"                               // Clear Direction Flag
             "movdqu (%1), %0\n"
-            "movntdq %0, (%2)\n"
+            "movdqa %0, (%2)\n"
             : "=x"(buf)
             : "r"((char*)src + i), "r"((char*)dest + i)
             : "memory"
@@ -84,8 +92,17 @@ int main(){
     for (int i = 0; i < n; i++)
         str[i] = (i % 26) + 'a';
     char* dest = new char[n];
+    for (int i = 0; i < 16; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            std::cout << i << ' ' << j << '\n';
+            memcpy16_aligned(dest + j, str + i, n - i - j);
+            print(dest + j, n - i - j);
 
-    memcpy16_aligned(dest, str, n);
+        }
+    }
+
+
+    memcpy16(dest, str, n);
     print(dest, n);
     delete[] dest;
 }
